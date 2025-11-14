@@ -1,10 +1,13 @@
-CXX := g++
+CXX := clagn++
 CXXFLAGS := -O2 -Wall -std=c++17
 
 TARGET := exe
-SRCS := 4931.cc
-PY := 4931.py
-JAVA := test.java
+PROBLEM := 14003
+LANG := py
+TEST := test.txt
+SRCS := $(PROBLEM).cc
+PY := $(PROBLEM).py
+JAVA := boj$(PROBLEM).java
 OBJS := $(SRCS:.cc=.o)
 
 # clang-tidy 설정
@@ -31,6 +34,9 @@ py:
 
 java:
 	$(JAVAC) $(JAVA)
+
+test:
+	 | test
 
 clean:
 	rm -f $(TARGET) *.o *.class
