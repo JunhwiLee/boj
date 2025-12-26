@@ -1,13 +1,12 @@
-#include <iostream>
-#include <string>
-#include <queue>
-#include <vector>
+#include <bits/stdc++.h>
 using namespace std;
+
+vector<int> result;
 
 class Node {
 public:
-    Node(char v, Node* p, int L)
-        : child_(0), par_(p), fail_(nullptr), val_(v), len_(L), end_(false), outLen_(0) {}
+    Node(char v, Node* p)
+        : child_(0), par_(p), fail_(nullptr), val_(v), best_(0), end_(false) {}
     bool lookup(char ch) const { 
         for(pair<char, Node*> child : child_){
             if(child.first == ch)
@@ -22,8 +21,8 @@ public:
         }
         return nullptr;
     }
-    Node* insert(char ch, Node* par, int len){
-        child_.push_back({ch, new Node(ch, par, len)});
+    Node* insert(char ch, Node* par){
+        child_.push_back({ch, new Node(ch, par)});
         return child_.back().second;
     }
     char val() const { return val_; }
@@ -31,16 +30,15 @@ public:
     void setPar(Node* par) { par_ = par; } 
     Node* fail() const { return fail_; }
     void setFail(Node* fail) { fail_ = fail; }
-    int len() const { return len_; }
+    int best() const { return best_; }
+    void setBest(int best) { best_ = best;}
     bool end() const { return end_; }
     void setEnd(bool end) { end_ = end; };
-    int outLen() const { return outLen_; }
-    void setOutLen(int L) { outLen_ = L; }
 private:
     vector<pair<char, Node*>> child_;
     Node *par_, *fail_;
     char val_;
-    int len_, outLen_;
+    int best_;
     bool end_;
 };
 
@@ -48,7 +46,7 @@ private:
 class AhoCorasick{
 public:
     AhoCorasick() {
-        head_ = new Node('.', nullptr, 0);
+        head_ = new Node('.', nullptr);
         head_->setPar(head_);
         head_->setFail(head_);
     }
@@ -57,84 +55,70 @@ public:
         Node* cur = head_;
         for(char ch : str) {
             if(!cur->lookup(ch))
-                cur = cur->insert(ch, cur, cur->len() + 1);
+                cur = cur->insert(ch, cur);
             else cur = cur->trans(ch);
         }
         cur->setEnd(true);
-        cur->setOutLen(max(cur->outLen(), cur->len()));
+        cur->setBest(str.size());
     }
 
     void failure() {
-        queue<Node*> q;
+        queue<Node*> que;
         head_->setFail(head_);
+        que.push(head_);
 
-        for (int i = 0; i < 26; ++i) {
-            char c = char('a' + i);
-            if (!head_->lookup(c)) continue;
-            Node* v = head_->trans(c);
-            v->setFail(head_);
-            if (v->fail()->outLen() > v->outLen())
-                v->setOutLen(v->fail()->outLen());
-            if (v->fail()->end()) v->setEnd(true);
+        while(!que.empty()){
+            Node* cur = que.front();
+            que.pop();
 
-            q.push(v);
-        }
-
-        while (!q.empty()) {
-            Node* v = q.front(); q.pop();
-            for (int i = 0; i < 26; ++i) {
-                char c = char('a' + i);
-                if (!v->lookup(c)) continue;
-
-                Node* u = v->trans(c);
-                Node* f = v->fail();
-                while (f != head_ && !f->lookup(c)) f = f->fail();
-                if (f->lookup(c)) f = f->trans(c);
-                else f = head_;
-
-                u->setFail(f);
-
-                if (u->fail()->outLen() > u->outLen())
-                    u->setOutLen(u->fail()->outLen());
-                if (u->fail()->end()) u->setEnd(true);
-                q.push(u);
+            Node* fail = cur->par();
+            while(fail != head_){
+                fail = fail->fail();
+                if(fail->lookup(cur->val())) {
+                    fail = fail->trans(cur->val());
+                    break;
+                }
+            }
+            cur->setFail(fail);
+            if(fail->end()) {
+                cur->setBest(max(cur->best(), fail->best()));
+                cur->setEnd(true);
+            }
+            
+            for(int i = 0; i<26; i++){
+                if(cur->lookup((char)(i + 'a')))
+                    que.push(cur->trans((char)(i + 'a')));
             }
         }
     }
 
-    int search(const string& s) {
-        const int n = (int)s.size();
-        vector<int> bestEnd(n, 0);
-
+    int search(string str) {
+        int res = 0;
         Node* cur = head_;
-        for (int i = 0; i < n; ++i) {
-            char ch = s[i];
-            while (cur != head_ && !cur->lookup(ch)) cur = cur->fail();
-            if (cur->lookup(ch)) cur = cur->trans(ch);
-
-            int L = cur->outLen();
-            if (L > 0) bestEnd[i] = L;
-        }
-
-        int covered = 0;
-        int curL = 1, curR = 0;
-        for (int i = 0; i < n; ++i) {
-            int L = bestEnd[i];
-            if (L == 0) continue;
-            int a = i - L + 1;
-
-            if (curL > curR) {
-                curL = a; curR = i;
-            } else if (a > curR + 1) {
-                covered += curR - curL + 1;
-                curL = a; curR = i;
-            } else {
-                if (a < curL) curL = a;
-                if (i > curR) curR = i;
+        int i = 0;
+        for(char ch : str){
+            if(cur->lookup(ch)){
+                cur = cur->trans(ch);
             }
+            else{
+                while(cur != head_){
+                    cur = cur->fail();
+                    if(cur->lookup(ch)){
+                        cur = cur->trans(ch);
+                        break;
+                    }
+                }
+            }
+            if(cur->end()) {
+                result[i] = cur->best();
+            }
+            i++;
         }
-        if (curL <= curR) covered += curR - curL + 1;
-        return covered;
+        if(cur->end()) {
+                result[i - 1] = cur->best();
+        }
+        
+        return res;
     }
 
 private:
@@ -149,7 +133,9 @@ int main(){
     string str;
     cin >> n >> str >> m;
 
-    AhoCorasick aho = AhoCorasick();
+    result.resize(n, -1);
+
+    AhoCorasick aho;
 
     for(int i = 0; i<m; i++){
         string pattern;
@@ -157,6 +143,28 @@ int main(){
         aho.insert(pattern);
     }
     aho.failure();
+    aho.search(str);
 
-    cout << n - aho.search(str) << endl;
+    /*for(int i = 0; i<n; i++) {
+        cout << result[i] << ' ';
+    }
+    cout << '\n';*/
+
+    int res = 0;
+    int cnt = 0;
+
+    for(int i = n - 1; i >= 0; i--){
+        if(result[i] == -1) {
+            if(cnt > 0) {
+                cnt--;
+            }else{
+                res++;
+            }
+        }
+        else {
+            cnt = max(result[i] - 1, cnt - 1);
+        }
+    }
+
+    cout << res << endl;
 }

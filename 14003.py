@@ -21,10 +21,6 @@ for i in range(1, n):
         mask[i] = dp[-1]
         dp.append(i)
         last = i
-        #print("mask")
-        #print(mask)
-        #print("dp")
-        #print([arr[i] for i in dp])
     else:
         idx = binary_search(arr[i])
         if not idx == 0:

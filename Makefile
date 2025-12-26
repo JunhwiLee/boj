@@ -23,14 +23,15 @@ JAVAC := javac
 
 .PHONY: all clean tidy test py java build_py build_cpp build_java
 
-all: $(TARGET)
+all: $(TARGET).out
 
-$(TARGET): $(OBJS)
+$(TARGET).out: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 # ========= 여기 추가: ref 바이너리 빌드 규칙 =========
 # ref 소스: ./ref/ref2809.cc 가 있다고 가정
 REFSRC := ./ref/ref$(PROBLEM).cc
+
 
 $(REF): $(REFSRC)
 	$(CXX) $(CXXFLAGS) -o $@ $<
@@ -78,4 +79,4 @@ test: $(BUILD_TARGET) $(REF)
 	$(PYTHON) $(TEST) "$(RUN_CMD)" $(CASE) "$(REF)"
 
 clean:
-	rm -f $(TARGET) *.o *.class $(REF)
+	rm -f $(TARGET) *.o *.class $(REF) exe *.out
