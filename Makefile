@@ -1,7 +1,7 @@
 CXX := clang++
 CXXFLAGS := -O2 -Wall -std=c++17
 
-PROBLEM := 2809
+PROBLEM := 1022
 TARGET := $(PROBLEM)
 # LANG: py / cpp / java
 LANG := cpp
